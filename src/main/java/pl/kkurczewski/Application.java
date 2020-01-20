@@ -15,25 +15,26 @@ import static pl.kkurczewski.topic.rest.TopicController.TOPIC_NAME;
 
 public class Application {
 
-    private static final String DEFAULT_PORT = "9093";
-    private static final String DEFAULT_BOOTSTRAP_SERVER = "localhost:9092";
+    private static final String PORT_ENV = "PORT";
+    private static final String PORT_DEFAULT = "9093";
+    private static final String BOOTSTRAP_SERVER_ENV = "BOOTSTRAP_SERVER";
+    private static final String BOOTSTRAP_SERVER_DEFAULT = "localhost:9092";
 
     public static void main(String[] args) {
-        int port = Integer.parseInt(System.getProperty("port", DEFAULT_PORT));
-        String bootstrapServers = System.getProperty("bootstrapServers", DEFAULT_BOOTSTRAP_SERVER);
+        int port = Integer.parseInt(getEnvOrDefault(PORT_ENV, PORT_DEFAULT));
+        String bootstrapServers = getEnvOrDefault(BOOTSTRAP_SERVER_ENV, BOOTSTRAP_SERVER_DEFAULT);
 
-        try (var topicService = new TopicService(bootstrapServers)) {
-            TopicController topicController = new TopicController(topicService);
+        var topicService = new TopicService(bootstrapServers);
+        var topicController = new TopicController(topicService);
 
-            Gson gson = new GsonBuilder().create();
-            JavalinJson.setFromJsonMapper(gson::fromJson);
-            JavalinJson.setToJsonMapper(gson::toJson);
+        Gson gson = new GsonBuilder().create();
+        JavalinJson.setFromJsonMapper(gson::fromJson);
+        JavalinJson.setToJsonMapper(gson::toJson);
 
-            Javalin.create(Application::config)
-                    .routes(() -> routing(topicController))
-                    .error(400, (ctx) -> ctx.result("Couldn't deserialize body" + tryGiveHint(ctx)))
-                    .start(port);
-        }
+        Javalin.create(Application::config)
+                .routes(() -> routing(topicController))
+                .error(400, (ctx) -> ctx.result("Couldn't deserialize body" + tryGiveHint(ctx)))
+                .start(port);
     }
 
     private static void config(JavalinConfig config) {
@@ -57,5 +58,10 @@ public class Application {
 
     private static String tryGiveHint(Context ctx) {
         return ctx.body().trim().startsWith("{") ? ", expected json array, got json object" : "";
+    }
+
+    private static String getEnvOrDefault(String envKey, String orElse) {
+        String envValue = System.getenv(envKey);
+        return (envValue != null) ? envValue : orElse;
     }
 }

@@ -1,9 +1,10 @@
 plugins {
     id 'java'
+    id 'com.palantir.docker' version '0.24.0'
 }
 
 group 'pl.kkurczewski'
-version '1.0-SNAPSHOT'
+version '0.1.0'
 
 sourceCompatibility = 11
 
@@ -11,19 +12,53 @@ repositories {
     mavenCentral()
 }
 
+def dockerImageName = "kurczews/$rootProject.name:$rootProject.version"
+def mainClass = "pl.kkurczewski.Application"
+
 dependencies {
     // core
-    compile 'io.javalin:javalin:3.7.0'
-    compile 'org.apache.kafka:kafka-clients:2.4.0'
-    compile 'ch.qos.logback:logback-classic:1.0.13'
-    compile 'com.google.code.gson:gson:2.8.6'
+    compile "io.javalin:javalin:3.7.0"
+    compile "org.apache.kafka:kafka-clients:2.4.0"
+    compile "ch.qos.logback:logback-classic:1.0.13"
+    compile "com.google.code.gson:gson:2.8.6"
 
     // tests
-    testCompile 'org.junit.jupiter:junit-jupiter-api:5.3.1'
-    testCompile 'org.assertj:assertj-core:3.11.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
+    def jupiterVersion = '5.5.2'
+    testCompile "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+    testCompile "org.junit.jupiter:junit-jupiter-params:$jupiterVersion"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$jupiterVersion"
+
+    testCompile "org.assertj:assertj-core:3.11.1"
 }
 
 test {
     useJUnitPlatform()
 }
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': mainClass,
+                'Class-Path': configurations.runtime.files.collect { "lib/$it.name" }.join(' ')
+        )
+    }
+}
+
+task copyDependencies(type: Copy) {
+    def outLibsDir = "$project.buildDir/docker/lib"
+    into(outLibsDir) from configurations.runtime
+}
+
+docker {
+    dockerfileZip.enabled = false
+    name dockerImageName
+    tag 'latest', version.toString()
+    buildArgs([VERSION: version.toString()])
+    dockerfile file('docker/Dockerfile')
+    files jar
+}
+
+// Avoid unnecessary extensive copying to temporary folder,
+// instead copy dependencies directly to docker plugin folder
+copyDependencies.mustRunAfter(dockerPrepare)
+docker.dependsOn(copyDependencies)

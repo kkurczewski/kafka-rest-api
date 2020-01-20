@@ -15,7 +15,17 @@ services:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=kafka-zookeeper:2181
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka-node:9092
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
     depends_on:
       - kafka-zookeeper
+
+  kafka-rest-client:
+    image: kurczews/kafka-rest-api:latest
+    ports:
+      - 9093:9093
+    environment:
+      - BOOTSTRAP_SERVER=kafka-node:9092
+      - PORT=9093
+    depends_on:
+      - kafka-node

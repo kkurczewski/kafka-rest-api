@@ -29,7 +29,7 @@ public class TopicController {
         var result = topicService.createTopic(
                 context.pathParam(TOPIC_NAME),
                 context.queryParam(PARTITIONS_NUMBER, Integer.class, DEFAULT_PARTITIONS_NUMBER).get(),
-                context.queryParam(REPLICAS_NUMBER, Short.class, DEFAULT_REPLICAS_NUMBER).get()
+                context.queryParam(REPLICAS_NUMBER, Integer.class, DEFAULT_REPLICAS_NUMBER).get()
         );
         context.result(result);
     }

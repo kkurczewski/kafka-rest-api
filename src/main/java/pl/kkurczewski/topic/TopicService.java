@@ -36,8 +36,8 @@ public class TopicService implements AutoCloseable {
         producer = new GenericProducer(bootstrapServers);
     }
 
-    public CompletableFuture<Void> createTopic(String topic, int partitions, short replicas) {
-        return completableFuture(adminClient.createTopics(List.of(new NewTopic(topic, partitions, replicas))).all());
+    public CompletableFuture<Void> createTopic(String topic, int partitions, Integer replicas) {
+        return completableFuture(adminClient.createTopics(List.of(new NewTopic(topic, partitions, replicas.shortValue()))).all());
     }
 
     public CompletableFuture<Void> sendMessages(String topic, Record[] records) {
